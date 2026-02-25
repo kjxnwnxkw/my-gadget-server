@@ -1,30 +1,33 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
 
-# Stored message state
-state = {
-    "msg": "",
-    "beep": True,
-    "duration": 20
-}
+latest_message = "No messages yet"
 
-@app.route("/send")
+HTML_PAGE = """
+<!doctype html>
+<title>My Gadget Server</title>
+<h2>Send a Message</h2>
+<form action="/send" method="POST">
+  <input type="text" name="message">
+  <input type="submit" value="Send">
+</form>
+<p>Latest message: {{ latest_message }}</p>
+"""
+
+@app.route("/")
+def home():
+    return render_template_string(HTML_PAGE, latest_message=latest_message)
+
+@app.route("/send", methods=["POST"])
 def send():
-    global state
-    msg = request.args.get("msg", "")
-    beep = request.args.get("beep", "1") == "1"
-    duration = int(request.args.get("duration", "20"))
-
-    state["msg"] = msg
-    state["beep"] = beep
-    state["duration"] = duration
-
-    return "OK"
+    global latest_message
+    latest_message = request.form["message"]
+    return render_template_string(HTML_PAGE, latest_message=latest_message)
 
 @app.route("/get")
-def get():
-    return jsonify(state)
+def get_message():
+    return latest_message
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
