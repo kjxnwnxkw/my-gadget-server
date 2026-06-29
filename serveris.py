@@ -2,8 +2,17 @@ from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
 
+# -----------------------------
+# Messages to ESP32
+# -----------------------------
 latest_title = " "
 latest_message = "No messages yet"
+
+# -----------------------------
+# Remote messages from ESP32
+# -----------------------------
+latest_remote = ""
+remote_counter = 0
 
 HTML_PAGE = """
 <!doctype html>
@@ -21,28 +30,70 @@ HTML_PAGE = """
   <input type="submit" value="Send" style="font-size:18px;">
 </form>
 
+<hr>
+
+<h2>Latest Remote Button</h2>
+
+<p style="font-size:22px;"><b>{{ latest_remote }}</b></p>
+
 <p><b>Latest header:</b> {{ latest_title }}</p>
 <p><b>Latest message:</b> {{ latest_message }}</p>
 """
 
+# ---------------------------------------
+# Home page
+# ---------------------------------------
 @app.route("/")
 def home():
     return render_template_string(
         HTML_PAGE,
         latest_title=latest_title,
-        latest_message=latest_message
+        latest_message=latest_message,
+        latest_remote=latest_remote
     )
 
+# ---------------------------------------
+# Send message to ESP32
+# ---------------------------------------
 @app.route("/send", methods=["POST"])
 def send():
     global latest_title, latest_message
+
     latest_title = request.form["title"]
     latest_message = request.form["message"]
+
     return home()
 
+# ---------------------------------------
+# ESP32 reads latest message
+# ---------------------------------------
 @app.route("/get")
 def get_message():
     return f"{latest_title}|||{latest_message}"
 
+# ---------------------------------------
+# ESP32 sends remote button
+# ---------------------------------------
+@app.route("/remote", methods=["POST"])
+def remote():
+    global latest_remote, remote_counter
+
+    latest_remote = request.form["button"]
+    remote_counter += 1
+
+    print("Remote:", latest_remote)
+
+    return "OK"
+
+# ---------------------------------------
+# Your computer/phone reads latest button
+# ---------------------------------------
+@app.route("/get_remote")
+def get_remote():
+    return f"{remote_counter}|||{latest_remote}"
+
+# ---------------------------------------
+# Run server
+# ---------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
