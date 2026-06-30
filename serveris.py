@@ -16,7 +16,13 @@ remote_counter = 0
 
 HTML_PAGE = """
 <!doctype html>
-<title>My Gadget Server</title>
+<html>
+
+<head>
+    <title>My Gadget Server</title>
+</head>
+
+<body>
 
 <h2>Send a Message</h2>
 
@@ -34,10 +40,42 @@ HTML_PAGE = """
 
 <h2>Latest Remote Button</h2>
 
-<p style="font-size:22px;"><b>{{ latest_remote }}</b></p>
+<p id="remote" style="font-size:28px; color:blue;">
+    {{ latest_remote }}
+</p>
+
+<hr>
 
 <p><b>Latest header:</b> {{ latest_title }}</p>
 <p><b>Latest message:</b> {{ latest_message }}</p>
+
+<script>
+async function updateRemote() {
+    try {
+        const response = await fetch("/get_remote");
+        const text = await response.text();
+
+        const parts = text.split("|||");
+
+        if(parts.length > 1){
+            document.getElementById("remote").innerText = parts[1];
+        }
+    }
+    catch(err){
+        console.log(err);
+    }
+}
+
+// Update every second
+setInterval(updateRemote,1000);
+
+// Update immediately when page opens
+updateRemote();
+
+</script>
+
+</body>
+</html>
 """
 
 # ---------------------------------------
@@ -86,14 +124,14 @@ def remote():
     return "OK"
 
 # ---------------------------------------
-# Your computer/phone reads latest button
+# Browser reads latest remote button
 # ---------------------------------------
 @app.route("/get_remote")
 def get_remote():
     return f"{remote_counter}|||{latest_remote}"
 
 # ---------------------------------------
-# Run server
+# Run
 # ---------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
